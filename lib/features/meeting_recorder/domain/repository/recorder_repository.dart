@@ -1,4 +1,7 @@
 abstract class RecorderRepository {
-  Future<void> startRecording();
-  Future<String?> stopRecording();
+  Future<void> startSystemAudio();
+  Future<void> stopSystemAudio();
+
+  Future<void> startMicAudio();
+  Future<void> stopMicAudio();
 }

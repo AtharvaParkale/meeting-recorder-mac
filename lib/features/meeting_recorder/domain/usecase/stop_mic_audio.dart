@@ -1,11 +1,9 @@
 import 'package:meeting_recorder/features/meeting_recorder/domain/repository/recorder_repository.dart';
 
-class StartRecording {
+class StopMicAudio {
   final RecorderRepository repository;
 
-  StartRecording(this.repository);
+  StopMicAudio(this.repository);
 
-  Future<void> call() {
-    return repository.startRecording();
-  }
+  Future<void> call() => repository.stopMicAudio();
 }

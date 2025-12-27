@@ -5,8 +5,12 @@ sealed class RecorderState {}
 
 final class RecorderInitial extends RecorderState {}
 
-class RecordingState extends RecorderState {
-  final bool isRecording;
+final class RecordingState extends RecorderState {
+  final bool isSystemRecording;
+  final bool isMicRecording;
 
-  RecordingState(this.isRecording);
+   RecordingState({
+    required this.isSystemRecording,
+    required this.isMicRecording,
+  });
 }

@@ -1,24 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:meeting_recorder/features/meeting_recorder/data/datasource/audio_datasource.dart';
+import 'package:meeting_recorder/features/meeting_recorder/data/datasource/mic_audio_channel.dart';
+import 'package:meeting_recorder/features/meeting_recorder/data/datasource/system_audio_channel.dart';
 import 'package:meeting_recorder/features/meeting_recorder/data/repositories/recorder_repository_impl.dart';
-import 'package:meeting_recorder/features/meeting_recorder/domain/usecase/start_recording.dart';
-import 'package:meeting_recorder/features/meeting_recorder/domain/usecase/stop_recording.dart';
+import 'package:meeting_recorder/features/meeting_recorder/domain/usecase/start_mic_audio.dart';
+import 'package:meeting_recorder/features/meeting_recorder/domain/usecase/start_system_audio.dart';
+import 'package:meeting_recorder/features/meeting_recorder/domain/usecase/stop_mic_audio.dart';
+import 'package:meeting_recorder/features/meeting_recorder/domain/usecase/stop_system_audio.dart';
 import 'package:meeting_recorder/features/meeting_recorder/presentation/bloc/recorder_bloc.dart';
 import 'package:meeting_recorder/features/meeting_recorder/presentation/pages/home_screen.dart';
 
 void main() {
-  final dataSource = SystemAudioDataSource();
-  final repository = RecorderRepositoryImpl(dataSource);
+  // 🔌 Data layer
+  final systemAudioChannel = SystemAudioChannel();
+  final micAudioChannel = MicAudioChannel();
 
-  runApp(
-    MyApp(
-      recorderBloc: RecorderBloc(
-        startRecording: StartRecording(repository),
-        stopRecording: StopRecording(repository),
-      ),
-    ),
+  final repository = RecorderRepositoryImpl(
+    systemAudioChannel: systemAudioChannel,
+    micAudioChannel: micAudioChannel,
   );
+
+  // 🎯 Domain layer (use cases)
+  final startSystemAudio = StartSystemAudio(repository);
+  final stopSystemAudio = StopSystemAudio(repository);
+  final startMicAudio = StartMicAudio(repository);
+  final stopMicAudio = StopMicAudio(repository);
+
+  // 🧠 Presentation layer (Bloc)
+  final recorderBloc = RecorderBloc(
+    startSystemAudio: startSystemAudio,
+    stopSystemAudio: stopSystemAudio,
+    startMicAudio: startMicAudio,
+    stopMicAudio: stopMicAudio,
+  );
+
+  runApp(MyApp(recorderBloc: recorderBloc));
 }
 
 class MyApp extends StatelessWidget {
@@ -30,10 +46,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: BlocProvider.value(
-        value: recorderBloc,
-        child: const RecorderPage(),
-      ),
+      home: BlocProvider.value(value: recorderBloc, child: const HomeScreen()),
     );
   }
 }

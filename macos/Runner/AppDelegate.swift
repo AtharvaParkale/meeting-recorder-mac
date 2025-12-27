@@ -7,18 +7,20 @@ import CoreMedia
 @main
 class AppDelegate: FlutterAppDelegate {
 
-  // MARK: - Properties
-
+  // ===== Existing System Audio =====
   private var stream: SCStream?
   private var audioFile: AVAudioFile?
   private var audioConverter: AVAudioConverter?
 
-  // MARK: - App Lifecycle
+  // ===== Added Mic Audio =====
+  private var micEngine: AVAudioEngine?
+  private var micFile: AVAudioFile?
 
   override func applicationDidFinishLaunching(_ notification: Notification) {
     let controller =
       mainFlutterWindow!.contentViewController as! FlutterViewController
 
+    // ===== System Audio Channel (UNCHANGED) =====
     let channel = FlutterMethodChannel(
       name: "system_audio",
       binaryMessenger: controller.engine.binaryMessenger
@@ -39,9 +41,33 @@ class AppDelegate: FlutterAppDelegate {
         result(FlutterMethodNotImplemented)
       }
     }
+
+    // ===== Mic Audio Channel (ADDED) =====
+    let micChannel = FlutterMethodChannel(
+      name: "mic_audio",
+      binaryMessenger: controller.engine.binaryMessenger
+    )
+
+    micChannel.setMethodCallHandler { [weak self] call, result in
+      guard let self = self else { return }
+
+      switch call.method {
+      case "start":
+        self.startMicRecording()
+        result(nil)
+
+      case "stop":
+        self.stopMicRecording(result: result)
+
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+
+    super.applicationDidFinishLaunching(notification)
   }
 
-  // MARK: - Start System Audio Capture
+  // MARK: - System Audio Capture (UNCHANGED)
 
   private func startCapture() {
     NSLog("🎧 Starting system audio capture")
@@ -54,13 +80,11 @@ class AppDelegate: FlutterAppDelegate {
           return
         }
 
-        // Stream configuration (audio only)
         let config = SCStreamConfiguration()
         config.capturesAudio = true
         config.sampleRate = 44100
         config.channelCount = 2
 
-        // Output file
         let outputURL = FileManager.default.temporaryDirectory
           .appendingPathComponent("system_audio.wav")
 
@@ -87,7 +111,6 @@ class AppDelegate: FlutterAppDelegate {
           delegate: nil
         )
 
-        // addStreamOutput → throws, NOT async
         try stream?.addStreamOutput(
           self,
           type: .audio,
@@ -95,15 +118,12 @@ class AppDelegate: FlutterAppDelegate {
         )
 
         try await stream?.startCapture()
-        NSLog("✅ System audio capture started")
 
       } catch {
         NSLog("❌ Failed to start capture: %@", error.localizedDescription)
       }
     }
   }
-
-  // MARK: - Stop Capture
 
   private func stopCapture(result: @escaping FlutterResult) {
     NSLog("⏹ Stopping capture")
@@ -129,7 +149,7 @@ class AppDelegate: FlutterAppDelegate {
   }
 }
 
-// MARK: - SCStreamOutput (Audio Handling)
+// MARK: - System Audio Stream Output (UNCHANGED)
 
 extension AppDelegate: SCStreamOutput {
 
@@ -150,7 +170,6 @@ extension AppDelegate: SCStreamOutput {
       streamDescription: &asbd
     )!
 
-    // Lazily create converter
     if audioConverter == nil {
       audioConverter = AVAudioConverter(
         from: inputFormat,
@@ -186,7 +205,7 @@ extension AppDelegate: SCStreamOutput {
   }
 }
 
-// MARK: - CMSampleBuffer → AVAudioPCMBuffer
+// MARK: - CMSampleBuffer Helper (UNCHANGED)
 
 extension CMSampleBuffer {
 
@@ -214,5 +233,63 @@ extension CMSampleBuffer {
     )
 
     return buffer
+  }
+}
+
+// MARK: - 🎤 Mic Audio (ADDED)
+
+extension AppDelegate {
+
+  func startMicRecording() {
+    NSLog("🎤 Starting mic audio recording")
+
+    micEngine = AVAudioEngine()
+    let inputNode = micEngine!.inputNode
+    let format = inputNode.outputFormat(forBus: 0)
+
+    let outputURL = FileManager.default.temporaryDirectory
+      .appendingPathComponent("mic_audio.wav")
+
+    do {
+      micFile = try AVAudioFile(
+        forWriting: outputURL,
+        settings: format.settings
+      )
+
+      inputNode.installTap(
+        onBus: 0,
+        bufferSize: 1024,
+        format: format
+      ) { [weak self] buffer, _ in
+        guard let self = self else { return }
+        do {
+          try self.micFile?.write(from: buffer)
+        } catch {
+          NSLog("❌ Mic write error: %@", error.localizedDescription)
+        }
+      }
+
+      micEngine?.prepare()
+      try micEngine?.start()
+
+    } catch {
+      NSLog("❌ Failed to start mic recording: %@", error.localizedDescription)
+    }
+  }
+
+  func stopMicRecording(result: FlutterResult) {
+    NSLog("🛑 Stopping mic recording")
+
+    micEngine?.inputNode.removeTap(onBus: 0)
+    micEngine?.stop()
+    micEngine = nil
+    micFile = nil
+
+    let path = FileManager.default.temporaryDirectory
+      .appendingPathComponent("mic_audio.wav")
+      .path
+
+    NSLog("💾 Mic audio saved at %@", path)
+    result(path)
   }
 }

@@ -29,6 +29,12 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 
+	<key>NSMicrophoneUsageDescription</key>
+    <string>Microphone access is required to record your voice.</string>
+
+    <key>NSScreenCaptureUsageDescription</key>
+    <string>Screen access is required to capture system audio.</string>
+
 <key>NSMicrophoneUsageDescription</key>
 <string>We need access to record meeting audio.</string>
 <key>NSScreenCaptureUsageDescription</key>

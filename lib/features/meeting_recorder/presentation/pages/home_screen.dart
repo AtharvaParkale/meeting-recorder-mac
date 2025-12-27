@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:meeting_recorder/features/meeting_recorder/presentation/bloc/recorder_bloc.dart';
 
-class RecorderPage extends StatelessWidget {
-  const RecorderPage({super.key});
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -11,7 +11,7 @@ class RecorderPage extends StatelessWidget {
       body: Center(
         child: BlocBuilder<RecorderBloc, RecorderState>(
           builder: (context, state) {
-            final isRecording = (state as RecordingState).isRecording;
+            final recording = state as RecordingState;
 
             return Column(
               mainAxisSize: MainAxisSize.min,
@@ -19,19 +19,28 @@ class RecorderPage extends StatelessWidget {
                 IconButton(
                   iconSize: 56,
                   icon: Icon(
-                    isRecording
-                        ? Icons.pause_circle_filled
-                        : Icons.play_circle_filled,
+                    recording.isSystemRecording
+                        ? Icons.pause_circle
+                        : Icons.volume_up,
                   ),
                   onPressed: () {
-                    context.read<RecorderBloc>().add(ToggleEvent());
+                    context.read<RecorderBloc>().add(ToggleSystemAudio());
                   },
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  isRecording ? 'Recording…' : 'Tap to start recording',
-                  style: const TextStyle(fontSize: 16),
+                const Text("System Audio (Google Meet)"),
+
+                const SizedBox(height: 24),
+
+                IconButton(
+                  iconSize: 56,
+                  icon: Icon(
+                    recording.isMicRecording ? Icons.pause_circle : Icons.mic,
+                  ),
+                  onPressed: () {
+                    context.read<RecorderBloc>().add(ToggleMicAudio());
+                  },
                 ),
+                const Text("Microphone"),
               ],
             );
           },
