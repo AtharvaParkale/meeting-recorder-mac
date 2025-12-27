@@ -30,10 +30,13 @@
 	<string>NSApplication</string>
 
 	<key>NSMicrophoneUsageDescription</key>
-    <string>Microphone access is required to record your voice.</string>
+    <string>Microphone access is required to record voice</string>
 
-    <key>NSScreenCaptureUsageDescription</key>
-    <string>Screen access is required to capture system audio.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Screen capture requires permission</string>
+
+    <key>NSSystemAdministrationUsageDescription</key>
+    <string>System audio recording requires permission</string>
 
 <key>NSMicrophoneUsageDescription</key>
 <string>We need access to record meeting audio.</string>
